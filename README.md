@@ -1,6 +1,6 @@
 # ACROBOT - An AI Speech-to-Speech ChatBot Assistant
 
-## Follow these steps to run J.A.R.V.I.S
+## Follow these steps to run 
 
 ### Step 1: Create a venv
 ```
