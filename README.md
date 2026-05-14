@@ -1,4 +1,4 @@
-# J.A.R.V.I.S - An AI Speech-to-Speech ChatBot Assistant
+# ACROBOT - An AI Speech-to-Speech ChatBot Assistant
 
 ## Follow these steps to run J.A.R.V.I.S
 
