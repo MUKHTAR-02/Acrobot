@@ -12,7 +12,10 @@ python -m venv acrobot-env
 acrobot-env\Scripts\activate     # for Windows
 source acrobot-env/bin/activate  # for Linux
 ```
-
+### Step 2.1 : bypass the execution policy for windows
+```
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
 ### Step 3: Upgrade pip
 ```
 pip install --upgrade pip
