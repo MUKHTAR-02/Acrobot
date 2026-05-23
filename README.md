@@ -1,4 +1,8 @@
-# ACROBOT - An AI Speech-to-Speech ChatBot Assistant ## Follow these steps to run ### Step 1: Create a venv
+# ACROBOT - An AI Speech-to-Speech ChatBot Assistant
+
+## Follow these steps to run 
+
+### Step 1: Create a venv
 python -m venv acrobot-env
 ### Step 2: Activate it
 acrobot-env\Scripts\activate     # for Windows
