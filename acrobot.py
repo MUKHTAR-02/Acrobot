@@ -1,4 +1,15 @@
 """
+
+  Additional installation for this file
+  ─────────────────────────────────────────────────────────
+    To install the offline fallback on your Pi:
+    ```
+    sudo apt install espeak espeak-data libespeak-dev
+    pip install pyttsx3
+    ```
+"""
+
+"""
 ============================================================
   🤖  AcroBot 2.2 — RAG-Powered Speech-to-Speech Chatbot
   Production Release
@@ -233,6 +244,7 @@ def build_system(lang: str, context: str) -> str:
 class State(Enum):
     IDLE      = "idle"
     LISTENING = "listening"
+    THINKING  = "thinking"
     SPEAKING  = "speaking"
 
 
@@ -241,71 +253,29 @@ class State(Enum):
 # ══════════════════════════════════════════════════════════
 
 ERROR_MESSAGES = {
-    "no_internet": {"en": "I can't connect to the internet."},
-    "api_error":   {"en": "I can't connect to the server."},
-    "env_error":   {"en": "Environmental error, please restart me."},
+    "api_error": {"en": "I can't connect to the server."},
+    "env_error": {"en": "Environmental error, please restart me."},
 }
-
-# Lightweight connectivity probe — tries to open a raw TCP socket to a
-# reliable public DNS server (Google 8.8.8.8:53).  No HTTP stack needed,
-# so it works even when Groq/edge-tts DNS is broken.
-_PROBE_HOST    = "8.8.8.8"
-_PROBE_PORT    = 53
-_PROBE_TIMEOUT = 2.0   # seconds
-
-
-def _has_internet() -> bool:
-    """Return True if basic internet connectivity is available."""
-    try:
-        socket.setdefaulttimeout(_PROBE_TIMEOUT)
-        with socket.create_connection((_PROBE_HOST, _PROBE_PORT)):
-            return True
-    except OSError:
-        return False
 
 
 def classify_error(exc: Exception) -> str:
-    """
-    Return one of 'no_internet', 'api_error', or 'env_error'.
-
-    Order of checks:
-      1. Is the exception network/connection-related?  If yes, probe
-         internet — offline → 'no_internet', online → 'api_error'
-         (server is reachable but the specific service failed).
-      2. Does the exception message signal an API-layer problem?
-         → 'api_error'
-      3. Anything else → 'env_error'
-    """
-    network_types = (
+    """Return 'api_error' or 'env_error' based on the exception type."""
+    api_related_types = (
         requests.exceptions.RequestException,
         ConnectionError,
         TimeoutError,
         socket.timeout,
         socket.gaierror,
-        OSError,
     )
+    if isinstance(exc, api_related_types):
+        return "api_error"
+
     exc_name = type(exc).__name__.lower()
     exc_msg  = str(exc).lower()
-
-    network_signals = (
-        "connection", "timeout", "network", "ssl", "host",
-        "dns", "name resolution", "unreachable", "refused",
-        "edge_tts", "endpoint",
-    )
-    is_network_error = (
-        isinstance(exc, network_types)
-        or any(s in exc_name for s in network_signals)
-        or any(s in exc_msg  for s in network_signals)
-    )
-
-    if is_network_error:
-        # Real connectivity check: don't guess from exception text alone.
-        return "no_internet" if not _has_internet() else "api_error"
-
     api_signals = (
-        "api", "groq", "rate limit",
-        "401", "403", "404", "429",
-        "500", "502", "503", "504",
+        "api", "groq", "rate limit", "401", "403", "404", "429",
+        "500", "502", "503", "504", "connection", "timeout",
+        "network", "ssl", "host", "dns", "edge_tts", "endpoint",
     )
     if any(s in exc_name for s in api_signals) or \
        any(s in exc_msg  for s in api_signals):
@@ -928,6 +898,7 @@ def state_label(state: State) -> str:
     return {
         State.IDLE:      "😴 IDLE",
         State.LISTENING: "👂 LISTENING",
+        State.THINKING:  "🤔 THINKING",
         State.SPEAKING:  "🔊 SPEAKING",
     }[state]
 
@@ -1032,6 +1003,8 @@ def main() -> None:
                     continue
 
                 # FIX-P6: reply scoped here; no shared mutable state
+                state = State.THINKING
+                logger.info(state_label(state))
                 reply = _process_query(user_text, lang, rag_en, rag_hi)
 
                 if reply is None:
